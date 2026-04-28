@@ -143,6 +143,10 @@ class LedgerMemMemory(Memory):
         return UpdateContextResult(memories=results)
 
     async def clear(self) -> None:
+        # Collect every id BEFORE deleting. Cursors derived from a mutating
+        # collection are unreliable — deleting in-place mid-pagination can
+        # silently skip rows or loop forever depending on the backend.
+        ids: list[str] = []
         cursor: str | None = None
         while True:
             page = await self._list(100, cursor)
@@ -150,10 +154,12 @@ class LedgerMemMemory(Memory):
             for item in items:
                 memory_id = getattr(item, "id", None)
                 if memory_id is not None:
-                    await self._delete(memory_id)
+                    ids.append(memory_id)
             cursor = getattr(page, "next_cursor", None)
             if not cursor:
-                return
+                break
+        for memory_id in ids:
+            await self._delete(memory_id)
 
     async def close(self) -> None:
         return None
