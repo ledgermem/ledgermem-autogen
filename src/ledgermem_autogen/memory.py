@@ -26,7 +26,12 @@ def _to_text(content: MemoryContent | str) -> tuple[str, dict[str, Any]]:
     if isinstance(content, str):
         return content, {"mime_type": MemoryMimeType.TEXT.value}
     metadata = dict(content.metadata or {})
-    metadata.setdefault("mime_type", str(content.mime_type))
+    # Persist the mime as its enum *value* (e.g. "text/plain"), not the
+    # repr (e.g. "MemoryMimeType.TEXT") — the repr is unstable across
+    # autogen versions and breaks downstream filters that key on mime_type.
+    mime = content.mime_type
+    mime_value = mime.value if hasattr(mime, "value") else str(mime)
+    metadata.setdefault("mime_type", mime_value)
     raw = content.content
     if isinstance(raw, (dict, list)):
         import json
@@ -131,12 +136,46 @@ class LedgerMemMemory(Memory):
         )
         if last_user is None or not getattr(last_user, "content", None):
             return UpdateContextResult(memories=MemoryQueryResult(results=[]))
-        query_text = (
-            last_user.content if isinstance(last_user.content, str) else str(last_user.content)
-        )
+        # Multimodal user turns put a list (text + image parts) in content.
+        # Concatenate just the text parts for the query — str(list) produces
+        # garbage like "[ImageContent(...), 'hello']" that wrecks recall.
+        raw_content = last_user.content
+        if isinstance(raw_content, str):
+            query_text = raw_content
+        elif isinstance(raw_content, list):
+            parts: list[str] = []
+            for part in raw_content:
+                if isinstance(part, str):
+                    parts.append(part)
+                else:
+                    text = getattr(part, "text", None)
+                    if isinstance(text, str):
+                        parts.append(text)
+            query_text = "\n".join(parts).strip()
+        else:
+            query_text = str(raw_content)
+        if not query_text:
+            return UpdateContextResult(memories=MemoryQueryResult(results=[]))
         results = await self.query(query_text)
-        if results.results:
-            joined = "\n".join(f"- {item.content}" for item in results.results)
+        # Deduplicate by content — update_context is called every turn, and
+        # the same memory hit on consecutive turns would otherwise pile up
+        # multiple identical SystemMessages and waste context window.
+        existing_texts = {
+            getattr(m, "content", None)
+            for m in messages
+            if isinstance(getattr(m, "content", None), str)
+        }
+        seen: set[str] = set()
+        unique: list[str] = []
+        for item in results.results:
+            text = item.content if isinstance(item.content, str) else str(item.content)
+            if text in seen:
+                continue
+            seen.add(text)
+            unique.append(text)
+        injection = [t for t in unique if not any(t in e for e in existing_texts if e)]
+        if injection:
+            joined = "\n".join(f"- {t}" for t in injection)
             await model_context.add_message(
                 SystemMessage(content=f"Relevant memories from LedgerMem:\n{joined}")
             )
