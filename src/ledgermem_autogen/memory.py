@@ -100,7 +100,11 @@ class LedgerMemMemory(Memory):
         cancellation_token: CancellationToken | None = None,
     ) -> None:
         text, metadata = _to_text(content)
-        metadata.setdefault("source", "autogen")
+        # Force-overwrite (not setdefault): caller-supplied metadata must not
+        # be able to spoof the trusted ``source`` tag. setdefault left a hole
+        # where any MemoryContent.metadata={"source": "trusted-system"} would
+        # round-trip and break downstream provenance filters.
+        metadata["source"] = "autogen"
         await self._add(text, metadata)
 
     async def query(
