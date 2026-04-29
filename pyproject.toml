@@ -3,14 +3,14 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ledgermem-autogen"
+name = "getmnemo-autogen"
 version = "0.1.0"
-description = "AutoGen 0.4+ Memory protocol implementation backed by LedgerMem."
+description = "AutoGen 0.4+ Memory protocol implementation backed by Mnemo."
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
-authors = [{ name = "LedgerMem", email = "founders@proofly.dev" }]
-keywords = ["ledgermem", "autogen", "memory", "agents", "llm"]
+authors = [{ name = "Mnemo", email = "founders@getmnemo.xyz" }]
+keywords = ["getmnemo", "autogen", "memory", "agents", "llm"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
@@ -21,7 +21,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-  "ledgermem>=0.1",
+  "getmnemo>=0.1",
   "autogen-core>=0.4",
 ]
 
@@ -34,12 +34,12 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ledgermem/ledgermem-autogen"
-Issues = "https://github.com/ledgermem/ledgermem-autogen/issues"
-Source = "https://github.com/ledgermem/ledgermem-autogen"
+Homepage = "https://github.com/getmnemo/getmnemo-autogen"
+Issues = "https://github.com/getmnemo/getmnemo-autogen/issues"
+Source = "https://github.com/getmnemo/getmnemo-autogen"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/ledgermem_autogen"]
+packages = ["src/getmnemo_autogen"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

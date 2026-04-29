@@ -1,4 +1,4 @@
-"""AutoGen 0.4+ ``Memory`` protocol implementation backed by LedgerMem.
+"""AutoGen 0.4+ ``Memory`` protocol implementation backed by Mnemo.
 
 The ``autogen_core.memory`` package defines a ``Memory`` protocol that the agent
 runtime calls during conversation turns. Implementations must support
@@ -19,7 +19,7 @@ from autogen_core.memory import (
 )
 from autogen_core.model_context import ChatCompletionContext
 from autogen_core.models import SystemMessage
-from ledgermem import AsyncLedgerMem, LedgerMem
+from getmnemo import AsyncMnemo, Mnemo
 
 
 def _to_text(content: MemoryContent | str) -> tuple[str, dict[str, Any]]:
@@ -40,25 +40,25 @@ def _to_text(content: MemoryContent | str) -> tuple[str, dict[str, Any]]:
     return str(raw), metadata
 
 
-class LedgerMemMemory(Memory):
-    """An AutoGen ``Memory`` provider that persists into LedgerMem.
+class MnemoMemory(Memory):
+    """An AutoGen ``Memory`` provider that persists into Mnemo.
 
-    Pass either a sync ``LedgerMem`` or an ``AsyncLedgerMem`` client. Sync
+    Pass either a sync ``Mnemo`` or an ``AsyncMnemo`` client. Sync
     clients are awaited via ``asyncio.to_thread`` to keep the agent loop
     non-blocking.
     """
 
     def __init__(
         self,
-        client: LedgerMem | AsyncLedgerMem,
+        client: Mnemo | AsyncMnemo,
         *,
         top_k: int = 5,
-        name: str = "ledgermem",
+        name: str = "getmnemo",
     ) -> None:
         self._client = client
         self._top_k = top_k
         self._name = name
-        self._is_async = isinstance(client, AsyncLedgerMem)
+        self._is_async = isinstance(client, AsyncMnemo)
 
     @property
     def name(self) -> str:
@@ -181,7 +181,7 @@ class LedgerMemMemory(Memory):
         if injection:
             joined = "\n".join(f"- {t}" for t in injection)
             await model_context.add_message(
-                SystemMessage(content=f"Relevant memories from LedgerMem:\n{joined}")
+                SystemMessage(content=f"Relevant memories from Mnemo:\n{joined}")
             )
         return UpdateContextResult(memories=results)
 

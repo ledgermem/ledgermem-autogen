@@ -1,4 +1,4 @@
-"""Smoke test: AutoGen memory provider talks to a mocked LedgerMem SDK."""
+"""Smoke test: AutoGen memory provider talks to a mocked Mnemo SDK."""
 
 from __future__ import annotations
 
@@ -8,12 +8,12 @@ import types
 from unittest.mock import MagicMock
 
 
-def _install_fake_ledgermem() -> None:
-    if "ledgermem" in sys.modules:
+def _install_fake_getmnemo() -> None:
+    if "getmnemo" in sys.modules:
         return
-    fake = types.ModuleType("ledgermem")
+    fake = types.ModuleType("getmnemo")
 
-    class LedgerMem:
+    class Mnemo:
         def __init__(self, *a, **k):
             pass
 
@@ -29,7 +29,7 @@ def _install_fake_ledgermem() -> None:
         def list(self, limit=20, cursor=None):
             return types.SimpleNamespace(items=[], next_cursor=None)
 
-    class AsyncLedgerMem:
+    class AsyncMnemo:
         def __init__(self, *a, **k):
             pass
 
@@ -45,29 +45,29 @@ def _install_fake_ledgermem() -> None:
         async def list(self, limit=20, cursor=None):
             return types.SimpleNamespace(items=[], next_cursor=None)
 
-    fake.LedgerMem = LedgerMem
-    fake.AsyncLedgerMem = AsyncLedgerMem
-    sys.modules["ledgermem"] = fake
+    fake.Mnemo = Mnemo
+    fake.AsyncMnemo = AsyncMnemo
+    sys.modules["getmnemo"] = fake
 
 
-_install_fake_ledgermem()
+_install_fake_getmnemo()
 
 from autogen_core.memory import MemoryContent, MemoryMimeType  # noqa: E402
-from ledgermem import LedgerMem  # noqa: E402
-from ledgermem_autogen import LedgerMemMemory  # noqa: E402
+from getmnemo import Mnemo  # noqa: E402
+from getmnemo_autogen import MnemoMemory  # noqa: E402
 
 
 def test_imports() -> None:
-    assert LedgerMemMemory is not None
+    assert MnemoMemory is not None
 
 
 def test_add_and_query_via_sync_client() -> None:
-    client = LedgerMem()
+    client = Mnemo()
     client.add = MagicMock(return_value=None)
     hit = type("Hit", (), {"id": "m1", "content": "hello", "metadata": {}, "score": 0.5})()
     client.search = MagicMock(return_value=type("R", (), {"hits": [hit]})())
 
-    memory = LedgerMemMemory(client=client, top_k=3)
+    memory = MnemoMemory(client=client, top_k=3)
 
     asyncio.run(memory.add(MemoryContent(content="hello", mime_type=MemoryMimeType.TEXT)))
     assert client.add.called
