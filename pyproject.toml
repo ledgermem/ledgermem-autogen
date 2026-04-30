@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "getmnemo-autogen"
+name = "mnemo-autogen"
 version = "0.1.0"
 description = "AutoGen 0.4+ Memory protocol implementation backed by Mnemo."
 readme = "README.md"
